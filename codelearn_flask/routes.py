@@ -10,9 +10,8 @@ import psycopg2
 import psycopg2.extras
 import datetime
 import pytz
-
-
-
+import numpy as np
+import pandas as pd
 
 DB_HOST = "192.168.1.7"
 DB_NAME = "iot_db"
@@ -33,16 +32,20 @@ def dashboard():
     cur.close()
 
     # time = [row[:] for row in t]
-    time = [int(row[0].strftime("%H")) for row in t]
+    time        = [int(row[0].strftime("%H")) for row in t]
     Temperature = [row[1] for row in t]
-    Humidity = [row[2] for row in t]
-    data = [time ,Temperature, Humidity]
+    Humidity    = [row[2] for row in t]
+    data        = [time ,Temperature, Humidity]
+    # labels      = ["01-01-2020","02-01-2020","03-01-2020"]
+    # values      = [3,4,6]
+    labels      = "01-01-2020"
+    values      = 3
+    # data1       = [labels ,values]
 
-    response = make_response(json.dumps(data))
-    response.content_type = 'application/json'
-    return render_template('Dashboard.html',title='Dashboard', label = response)
-  
-
+    # response = make_response(json.dumps(data))
+    # response.content_type = 'application/json'
+    return render_template('Dashboard.html',title='Dashboard', labels = labels,values=values)
+ 
 @app.route('/DataBoard',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def upload():
     if request.method == "POST":
@@ -63,7 +66,17 @@ def upload():
         conn.commit()
         cur.close()
     if request.method == "GET":
-        return "hello"
+        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+        cur = conn.cursor()
+        cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 hour';")
+        t = cur.fetchall()
+        cur.close()
+
+        labels = [int(row[0].strftime("%M")) for row in t]
+        Temperature = [row[1] for row in t]
+        Humidity = [row[2] for row in t]
+        
+        return render_template('ML.html',labels=labels,values1=Temperature,values2=Humidity)
     return render_template('DataBoard.html',title='DataBoard')
 
 @app.route('/data', methods=["GET", "POST"])   # SENDING LIVE DATA TO GRAPHS
@@ -109,6 +122,54 @@ def test():
     response.content_type = 'application/json'
     return response
     # return {"res":data}
+    
+@app.route('/oneday',methods=['GET'])
+def oneday():
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+    cur = conn.cursor()
+    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 day';")
+    t = cur.fetchall()
+    cur.close()
+
+    Datetime = pd.DataFrame([int(row[0].strftime("%H")) for row in t],columns=['hour'])
+    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
+    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])
+    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    time = list(data["hour"].unique())
+    dd = data.groupby("hour").mean()
+    return render_template('oneday.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
+
+@app.route('/onehour',methods=['GET'])
+def onehour():
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+    cur = conn.cursor()
+    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 hour';")
+    t = cur.fetchall()
+    cur.close()
+
+    Datetime = pd.DataFrame([int(row[0].strftime("%M")) for row in t],columns=['Minute'])
+    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
+    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])
+    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    time = list(data["Minute"].unique())
+    dd = data.groupby("Minute").mean()
+    return render_template('onehour.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
+
+@app.route('/oneweek',methods=['GET'])
+def oneweek():
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+    cur = conn.cursor()
+    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 week';")
+    t = cur.fetchall()
+    cur.close()
+
+    Datetime = pd.DataFrame([(row[0].strftime("%A")) for row in t],columns=['day'])
+    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
+    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])    
+    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    time = list(data["day"].unique())
+    dd = data.groupby("day").mean()
+    return render_template('oneweek.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
 
 @app.route('/Lookin',methods=['POST','GET'])   # done    LOGIN PAGE NOTHING TO DO HERE
 def lookin():
