@@ -1,0 +1,388 @@
+{% extends'layout.html'%}
+
+{% block contentA %}
+<html  lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+
+    <title>Flask App </title>
+
+    <!-- Bootstraps Java Scipts Links -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+
+
+    <!-- JQuery links  -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+    <!--High CHART LIVE  -->
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/highcharts-more.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+    <!--Gauge  -->
+    <script type="text/javascript" src="http://pubnub.github.io/eon/lib/eon.js"></script>
+    <style>
+
+        .jumbotron{
+            widows: 100px;
+            height: 70px;
+            justify-content: center;
+        }
+
+        .row{
+            justify-content: center;
+        }
+        .mar-top{
+            font-size: 80px;
+            font-weight:bold;
+        }
+
+
+    </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', { 'packages': ['line'] });
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+
+            var data = new google.visualization.DataTable();
+            data.addColumn('number', 'Day');
+            data.addColumn('number', 'Guardians of the Galaxy');
+            data.addColumn('number', 'The Avengers');
+            data.addColumn('number', 'Transformers: Age of Extinction');
+
+            data.addRows([
+                [1, 37.8, 80.8, 41.8],
+                [2, 30.9, 69.5, 32.4],
+                [3, 25.4, 57, 25.7],
+                [4, 11.7, 18.8, 10.5],
+                [5, 11.9, 17.6, 10.4],
+                [6, 8.8, 13.6, 7.7],
+                [7, 7.6, 12.3, 9.6],
+                [8, 12.3, 29.2, 10.6],
+                [9, 16.9, 42.9, 14.8],
+                [10, 12.8, 30.9, 11.6],
+                [11, 5.3, 7.9, 4.7],
+                [12, 6.6, 8.4, 5.2],
+                [13, 4.8, 6.3, 3.6],
+                [14, 4.2, 6.2, 3.4]
+            ]);
+
+            var options = {
+                chart: {
+                    // title: 'Daily Temperature and Humidity Chart',
+                    //   subtitle: 'in millions of dollars (USD)'
+                },
+                is3D: true,
+                width: 1200,
+                height: 500,
+                axes: {
+                    x: {
+                        0: { side: 'bottom' }
+                    }
+                }
+            };
+
+            var chart = new google.charts.Line(document.getElementById('line_top_x'));
+
+            chart.draw(data, google.charts.Line.convertOptions(options));
+        }
+    </script>
+
+
+</head>
+
+<body>
+
+    <div class="jumbotron">
+        <h1 class="text-center text-white mt-5 mar-top">Welcome to your Dashboard </h1>
+    </div>
+    <br>
+    <br>
+
+    <div class="container-fluid">
+
+        <div class="row">
+
+            <div class="col-5 jumbotron p-2 mx-1">
+                <h1 class="sensor1 text-center "> Sensor : </h1>
+            </div>
+            <br>
+            <div class="container-fluid">
+                <!-- Example row of columns -->
+                <div class="row">
+                    <div class="container" id="data-temperature">
+        
+                    </div>
+                </div>
+            </div>
+        <br>
+        <br>
+        <br>
+
+            <div class="col-5 jumbotron p-2 mx-1">
+                <h1 class="sensor2 text-center ">Sensor :</h1>
+            </div>
+            <br>
+            <div class="container-fluid">
+                <!-- Example row of columns -->
+                <div class="row">
+                    <div class="container" id="data-humidity">
+        
+                    </div>
+                </div>
+            </div>
+            <div class="col-7 jumbotron p-2 mx-1">
+                <h1 class="text-center ">Daily Temperature and Humidity Chart</h1>
+            </div>
+            <div class='container mt-3' id="line_top_x"></div>
+            <div>
+                <form action="/DataBoard" method="get">
+                    <button type='submit' class='btn btn-primary btn-large rounded-pill btnn mt-5' style="width:170px;height:50px;position:absolute;left:80%;top:250%">
+                        Refresh daily c hart
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+ 
+
+
+
+    <script>
+        var chartTemperatue;
+        var chartHumidity;
+
+        function requestData()
+        {
+            // Ajax call to get the Data from Flask
+            var requests = $.get('/data');
+
+            var tm = requests.done(function (result)
+            {
+                // Temperature
+                var seriesTemperature = chartTemperatue.series[0],
+                    shiftTemperature = seriesTemperature.data.length > 20;
+ 
+                // Humidity
+                var seriesHumidity = chartHumidity.series[0],
+                    shiftHumidity = seriesTemperature.data.length > 20;
+
+                // Add the Point
+                // Time Temperature\
+                var data1 = [];
+                data1.push(result[0]);
+                data1.push(result[1]);
+
+
+                // Add the Point
+                // Time Humidity
+                var data2 = [];
+                data2.push(result[0]);
+                data2.push(result[2]);
+
+
+                chartTemperatue.series[0].addPoint(data1, true, shiftTemperature);
+                chartHumidity.series[0].addPoint(data2, true, shiftHumidity);
+                $(".sensor1").text("");
+                $(".sensor1").text("Temperature : " +  (data1[1]) );
+
+                $(".sensor2").text("");
+                $(".sensor2").text("Humidity : " +  (data2[1]) );
+
+                // call it again after one second
+                setTimeout(requestData, 7000);
+
+            });
+        }
+
+        $(document).ready(function()
+        {
+            // --------------Chart 1 ----------------------------
+            chartTemperatue = new Highcharts.Chart({
+                chart:
+                    {
+                    renderTo: 'data-temperature',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: requestData
+                            }
+                    },
+                title:
+                    {
+                    text: 'Temperature'
+                    },
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                        },
+                yAxis: {
+                    minPadding: 0.2,
+                    maxPadding: 0.2,
+                    title: {
+                        text: 'Value',
+                        margin: 10
+                            }
+                         },
+                series: [{
+                    color : '#c23d23',
+                    lineColor: '#303030',
+                    name: 'Temperature',
+                    data: []
+                }]
+            });
+            // --------------Chart 1 Ends - -----------------
+
+            chartHumidity = new Highcharts.Chart({
+                chart:
+                    {
+                        renderTo: 'data-humidity',
+                        defaultSeriesType: 'line',
+                        events: {
+                            load: requestData
+                        }
+                    },
+                title:
+                    {
+                        text: 'Humidity'
+                    },
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+                yAxis: {
+                    minPadding: 0.2,
+                    maxPadding: 0.2,
+                    title: {
+                        text: 'Value',
+                        margin: 10
+                    }
+                },
+                series: [{
+                    lineColor: '#1d82b8',
+                    name: 'Humidity',
+                    data: []
+                }]
+            });
+
+
+        });
+    </script>
+
+
+
+<script>
+    class Image{
+
+        constructor(imgUrl, size)
+        {
+            this.imgUrl=imgUrl;
+            this.size=size;
+        }
+
+        backgroundImage()
+        {
+            console.log("inside function ")
+            // Select the Image
+            var img = document.querySelector(".jumbotron");
+
+            // create Css Text
+            var text = "margin:auto;"+
+                "background-image: url("+this.imgUrl+");" +
+                "background-size:cover;"+
+                "opacity:1;"+
+                "background-blend-mode: darken;"+
+                "height: "+ this.size + "vh;";
+
+            img.style.cssText =  text;
+        }
+
+        centerTitle()
+        {
+            /*
+                Center the Title
+             */
+            var t1 = document.querySelector("#title");
+            t1.classList.add("text-white");
+            t1.classList.add("text-center");
+            t1.classList.add("display-3");
+        }
+    }
+    const imgUrl = 'https://www.originsolutions.com.au/wp-content/uploads/2020/10/315.jpg'
+    const size = "50";
+    var obj = new Image(imgUrl, size);
+    obj.backgroundImage();
+    obj.centerTitle();
+    </script>
+</body>
+</html>
+
+               <!-- ------------------ Daily Chart ---------------- -->
+<!-- <html>
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['line']});
+      google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+
+      var data = new google.visualization.DataTable();
+      data.addColumn('number', 'Day');
+      data.addColumn('number', 'Guardians of the Galaxy');
+      data.addColumn('number', 'The Avengers');
+      data.addColumn('number', 'Transformers: Age of Extinction');
+
+      data.addRows([
+        [1,  37.8, 80.8, 41.8],
+        [2,  30.9, 69.5, 32.4],
+        [3,  25.4,   57, 25.7],
+        [4,  11.7, 18.8, 10.5],
+        [5,  11.9, 17.6, 10.4],
+        [6,   8.8, 13.6,  7.7],
+        [7,   7.6, 12.3,  9.6],
+        [8,  12.3, 29.2, 10.6],
+        [9,  16.9, 42.9, 14.8],
+        [10, 12.8, 30.9, 11.6],
+        [11,  5.3,  7.9,  4.7],
+        [12,  6.6,  8.4,  5.2],
+        [13,  4.8,  6.3,  3.6],
+        [14,  4.2,  6.2,  3.4]
+      ]);
+
+      var options = {
+        chart: {
+          title: 'Daily Temperature and Humidity Chart',
+        //   subtitle: 'in millions of dollars (USD)'
+        },
+        width: 1200,
+        height: 500,
+        axes: {
+          x: {
+            0: {side: 'top'}
+          }
+        }
+      };
+
+      var chart = new google.charts.Line(document.getElementById('line_top_x'));
+
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+  </script>
+</head>
+<body>
+  <div class='container' id="line_top_x"></div>
+</body>
+</html> -->
+
+{%endblock contentA %}

@@ -1,0 +1,44 @@
+{% extends'layout.html'%}
+
+{% block contentA %}
+<div class="content"  >
+<div class="card text-center" id='content' style="background-image: url('../static/IMG.jpg');background-size: cover;background-repeat: no-repeat;color:white !important;">
+  <style>
+    .btnn{
+      width:150px !important;
+      font-size:20px;
+      background:rgb(235, 60, 197) !important;
+      color:white !important;
+    }
+    .btnn:hover{
+      color:rgb(235, 60, 197) !important;
+      background:white !important;
+    }
+    .m-top{
+      margin-top: 15%;
+    }
+    .m-tp{
+      margin-top: 12%;
+      margin-bottom: 1%;
+    }
+    </style>
+
+    <div class="card-body">
+      <div class='row m-top'>
+        <div class="col-12">
+          <h1 class="card-title ">Home Automation using</h1>
+          <h2 class="card-title ">Internet of Things + Machine Learning</h2>
+          <a href="{{url_for('lookin')}}" class="btn btn-primary btn-large rounded-pill btnn mt-5" >Lookin ></a>
+        </div>
+      </div>
+      <div class='row m-tp'>
+        <div class="col-12">
+          <h4 class="card-text text-center">By Utsav and Varshini</h4>
+        </div>
+      </div>
+    </div>
+
+</div>
+</div>
+<script src="{{url_for('static',filename='main.js')}}"></script>
+{%endblock contentA %}
