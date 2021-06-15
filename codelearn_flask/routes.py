@@ -27,24 +27,13 @@ def homepage():
 def dashboard():
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
     cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 minute';")
+    cur.execute('SELECT water FROM datas ORDER BY "time" DESC LIMIT 1')
     t = cur.fetchall()
     cur.close()
-
-    # time = [row[:] for row in t]
-    time        = [int(row[0].strftime("%H")) for row in t]
-    Temperature = [row[1] for row in t]
-    Humidity    = [row[2] for row in t]
-    data        = [time ,Temperature, Humidity]
-    # labels      = ["01-01-2020","02-01-2020","03-01-2020"]
-    # values      = [3,4,6]
-    labels      = "01-01-2020"
-    values      = 3
-    # data1       = [labels ,values]
-
-    # response = make_response(json.dumps(data))
-    # response.content_type = 'application/json'
-    return render_template('Dashboard.html',title='Dashboard', labels = labels,values=values)
+    water = t[0][0]
+    air = 100-water
+    waterdata = [water,air]
+    return render_template('Dashboard.html',title='Dashboard',water_data=waterdata)
  
 @app.route('/DataBoard',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def upload():
@@ -65,6 +54,7 @@ def upload():
                     )
         conn.commit()
         cur.close()
+        return "Led on"
     if request.method == "GET":
         conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
         cur = conn.cursor()
@@ -77,7 +67,7 @@ def upload():
         Humidity = [row[2] for row in t]
         
         return render_template('ML.html',labels=labels,values1=Temperature,values2=Humidity)
-    return render_template('DataBoard.html',title='DataBoard')
+    # return render_template('DataBoard.html',title='DataBoard')
 
 @app.route('/data', methods=["GET", "POST"])   # SENDING LIVE DATA TO GRAPHS
 def data():
@@ -103,27 +93,11 @@ def data():
     response.content_type = 'application/json'
     return response
 
-@app.route('/test', methods=["GET", "POST"])
+@app.route('/test', methods=["GET", "POST"])   # FOR EXPERIMENTING PURPOUS ONLY
 def test():
-
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-    cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 minute';")
-    t = cur.fetchall()
-    cur.close()
-
-    # time = [row[:] for row in t]
-    time = [int(row[0].strftime("%H")) for row in t]
-    Temperature = [row[1] for row in t]
-    Humidity = [row[2] for row in t]
-    data = [time ,Temperature, Humidity]
-
-    response = make_response(json.dumps(data))
-    response.content_type = 'application/json'
-    return response
-    # return {"res":data}
+    return render_template("MLpage.html",titel='Lookin')
     
-@app.route('/oneday',methods=['GET'])
+@app.route('/oneday',methods=['GET'])          # SENDS HOURLY DATA TO WEBPAGE
 def oneday():
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
     cur = conn.cursor()
@@ -139,7 +113,7 @@ def oneday():
     dd = data.groupby("hour").mean()
     return render_template('oneday.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
 
-@app.route('/onehour',methods=['GET'])
+@app.route('/onehour',methods=['GET'])       # SENDS EVERY MINUTE DATA TO WEBPAGE
 def onehour():
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
     cur = conn.cursor()
@@ -155,7 +129,7 @@ def onehour():
     dd = data.groupby("Minute").mean()
     return render_template('onehour.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
 
-@app.route('/oneweek',methods=['GET'])
+@app.route('/oneweek',methods=['GET'])       # SENDS DAILY DATA TO WEBPAGE
 def oneweek():
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
     cur = conn.cursor()
@@ -190,3 +164,19 @@ def reg():
         flash(f'Account created {form.username.data}', category='success')
         return redirect(url_for('homepage'))
     return render_template('reg.html',titel='Reg',form=form)
+
+@app.route('/predict',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
+def predict():
+    Hour = int(request.args.get('time')[0:2])
+    Minute = int(request.args.get('time')[3:5])
+    return '''
+              <h1>The Hour value is: {}</h1>
+              <h1>The Minute value is: {}</h1>'''.format(Hour, Minute)
+
+@app.route('/voice',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
+def voice():
+    com = request.args.get('command')
+    if com == "LED on":
+        return "on"
+    else:
+        return "off"

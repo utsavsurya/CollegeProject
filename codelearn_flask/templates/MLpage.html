@@ -1,0 +1,60 @@
+{% extends'layout.html'%}
+
+{% block contentA %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+<body>
+
+<h1>Select time</h1>
+
+<form action="/predict" method="GET">
+    <div>
+      <label for="appt-time">Choose a time: </label>
+      <input id="appt-time" type="time" name="time">
+    </div>
+    <div>
+        <input type="submit" value="Predict">
+    </div>
+</form>
+<!-- Switch -->
+<div class="switch">
+    <label for="switch4">
+      Off
+      <input type="checkbox" id="switch4" checked="checked">
+      <span class="lever"></span>
+      On
+    </label>
+</div>
+
+<div>
+  <canvas id="mydoughnut"></canvas>
+</div>
+</body>
+
+<script>
+  var ctx = document.getElementById("mydoughnut").getContext("2d");
+  var lineChart = new Chart(ctx,{
+      type: "doughnut",
+      data:{
+          labels: ['Water','Air'],
+          datasets: [{
+            label: 'Water Level',
+            data: [75, 50],
+            backgroundColor: [
+              'rgb(54, 162, 235)',
+              'rgb(120,120,120)'
+            ],
+            hoverOffset: 4
+          }]
+        },
+      options: {
+          responsive: false
+      }
+  });
+</script>
+
+</html>
+{%endblock contentA %}

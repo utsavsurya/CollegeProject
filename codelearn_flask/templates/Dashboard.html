@@ -94,6 +94,10 @@
                 <h1 class="text-center ">Daily Temperature and Humidity Chart</h1>
             </div>
             <div class='container mt-3' id="line_top_x"></div>
+
+            <div>
+                <canvas id="mydoughnut"></canvas>
+            </div>
             
             <div>
                 <form action="/oneday" method="get">
@@ -118,10 +122,12 @@
                     </button>
                 </form>
             </div>
+            <br>
+            <br>
         </div>
     </div>
 
-    <script>
+<script>
         var chartTemperatue;
         var chartHumidity;
 
@@ -242,11 +248,11 @@
 
 
         });
-    </script>
+</script>
 
 
 
-    <script>
+<script>
     class Image{
 
         constructor(imgUrl, size)
@@ -288,7 +294,31 @@
     var obj = new Image(imgUrl, size);
     obj.backgroundImage();
     obj.centerTitle();
-    </script>
+</script>
 </body>
+
+<!-- Doughnut chart script -->
+<script>
+    var ctx = document.getElementById("mydoughnut").getContext("2d");
+    var lineChart = new Chart(ctx,{
+        type: "doughnut",
+        data:{
+            labels: ['Water','Air'],
+            datasets: [{
+              label: 'Water Level',
+              data: {{ water_data | safe }},
+              backgroundColor: [
+                'rgb(54, 162, 235)',
+                'rgb(120,120,120)'
+              ],
+              hoverOffset: 4
+            }]
+          },
+        options: {
+            responsive: false
+        }
+    });
+</script>
+
 </html>
 {%endblock contentA %}
