@@ -5,13 +5,15 @@
 
 DHT dht(D5, DHT11);
 #define fan D6
-#define LED D7
+#define day D7
+#define night D1
+#define party D2
+#define movie D3
 
 #define POWER_PIN  D8
 #define SIGNAL_PIN A0
 
 int water_value = 0;
-int water=0;
 
 String Database = "http://192.168.1.7:80/DataBoard";
 String GetVoiceCommand = "http://192.168.1.7/voice";
@@ -21,10 +23,14 @@ void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(LED, OUTPUT);
+  pinMode(day, OUTPUT);
   pinMode(fan, OUTPUT);
+  pinMode(night, OUTPUT);
+  pinMode(party, OUTPUT);
+  pinMode(movie, OUTPUT);
   pinMode(POWER_PIN, OUTPUT);   // configure D7 pin as an OUTPUT
   digitalWrite(POWER_PIN, LOW); // turn the sensor OFF
+
   WiFi.begin("NETGEAR91", "roundwind200");
   while(WiFi.status() != WL_CONNECTED)
   {
@@ -40,45 +46,21 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  
-  float h   = dht.readHumidity();
-  float t   = dht.readTemperature();
-  float w   = 90;
-  float p   = 10;
-  float ppl = 4;
-
   digitalWrite(POWER_PIN, HIGH);        // turn the sensor ON
   delay(10);                            // wait 10 milliseconds
   water_value = analogRead(SIGNAL_PIN); // read the analog value from sensor
   digitalWrite(POWER_PIN, LOW);         // turn the sensor OFF
 
-  Serial.print("Sensor value: ");
-  Serial.println(water_value);
-  if(water_value<30)
-  {
-    water=0;
-    Serial.println("0%");
-  }
-  if(water_value>30 && water_value<=230)
-  {
-    water=25;
-    Serial.println("25%");
-  }
-  if(water_value>230 && water_value<=305)
-  {
-    water=50;
-    Serial.println("50%");
-  }
-  if(water_value>305 && water_value<=380)
-  {
-    water=75;
-    Serial.println("75%");
-  }
-  if(water_value>380)
-  {
-    water =100;
-    Serial.println("100%");
-  }
+  float h   = dht.readHumidity();
+  float t   = dht.readTemperature();
+  float w   = water_value;
+  float p   = 10;
+  float ppl = 4;
+
+  
+
+  Serial.print("Water level value: ");
+  Serial.println(water_value); 
   
   if(t>=30 )
   {
@@ -90,6 +72,7 @@ void loop()
     Serial.println("FAN OFF");
     digitalWrite(fan,LOW);
   }
+
   Serial.println(t);
   Serial.println(h);
   Serial.println(w);
@@ -101,12 +84,13 @@ void loop()
     HTTPClient http;
     http.begin(Database);
     http.addHeader("Content-Type","application/json");
+    
     DynamicJsonDocument doc(1024);
-     doc["temp"]  = t;
-     doc["hum"]   = h;
-     doc["water"] = water;
-     doc["pow"]   = p;
-     doc["ppl"]   = ppl;
+    doc["temp"]  = t;
+    doc["hum"]   = h;
+    doc["water"] = w;
+    doc["pow"]   = p;
+    doc["ppl"]   = ppl;
 
     String json;
     serializeJson(doc,json);     
@@ -115,10 +99,36 @@ void loop()
     
     http.begin(GetVoiceCommand);
     http.GET();
+    StaticJsonDocument<128> docback;
     String httpGetResponse = http.getString();
     http.end();
-    if(httpGetResponse == "on"){digitalWrite(D7,HIGH);}
-    else{digitalWrite(D7,LOW);}
+  
+    DeserializationError error = deserializeJson(docback,httpGetResponse);  
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+  
+    int day_mode = docback["day_mode"]; 
+    int movie_mode = docback["movie_mode"]; 
+    int night_mode = docback["night_mode"]; 
+    int party_mode = docback["party_mode"]; 
+
+    Serial.println("----------------------");
+    if(day_mode){digitalWrite(day,HIGH);}
+    else{digitalWrite(day,LOW);}
+    if(night_mode){digitalWrite(night,HIGH);}
+    else{digitalWrite(night,LOW);}
+    if(party_mode){digitalWrite(party,HIGH);}
+    else{digitalWrite(party,LOW);}
+    if(movie_mode){digitalWrite(movie,HIGH);}
+    else{digitalWrite(movie,LOW);}
+
+    Serial.println(day_mode);
+    Serial.println(movie_mode);
+    Serial.println(night_mode);
+    Serial.println(party_mode);
     
     if(httpResponseCode>0)
     {
@@ -137,5 +147,5 @@ void loop()
   else
   {Serial.println("error connecting to wifi");}
  
-   delay(5000);
+  delay(5000);
 }

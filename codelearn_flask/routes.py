@@ -30,11 +30,11 @@ def dashboard():
     cur.execute('SELECT water FROM datas ORDER BY "time" DESC LIMIT 1')
     t = cur.fetchall()
     cur.close()
-    water = t[0][0]
+    water = ((t[0][0])/575)*100
     air = 100-water
     waterdata = [water,air]
     return render_template('Dashboard.html',title='Dashboard',water_data=waterdata)
- 
+
 @app.route('/DataBoard',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def upload():
     if request.method == "POST":
@@ -101,17 +101,18 @@ def test():
 def oneday():
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
     cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 day';")
+    cur.execute("SELECT time,temperature,humidity,water FROM datas where time > now() - interval '1 day';")
     t = cur.fetchall()
     cur.close()
 
     Datetime = pd.DataFrame([int(row[0].strftime("%H")) for row in t],columns=['hour'])
     Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
     Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])
-    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    Water = pd.DataFrame([row[3] for row in t],columns=['Wat'])
+    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity,Water],axis=1))
     time = list(data["hour"].unique())
     dd = data.groupby("hour").mean()
-    return render_template('oneday.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
+    return render_template('oneday.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]),water_values=list(dd["Wat"]))
 
 @app.route('/onehour',methods=['GET'])       # SENDS EVERY MINUTE DATA TO WEBPAGE
 def onehour():
@@ -175,8 +176,43 @@ def predict():
 
 @app.route('/voice',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def voice():
-    com = request.args.get('command')
-    if com == "LED on":
-        return "on"
-    else:
-        return "off"
+    if request.method == "POST":
+        com = request.args.get('command')
+        day_mode = 0
+        night_mode = 0
+        party_mode = 0
+        movie_mode = 0
+        if com == "good morning" or com == "LED on" or com == "day mode" :
+            day_mode = 1
+        
+        elif com == "good night" or com == "led off" or com == "night mode" :
+            night_mode = 1
+    
+        elif com == "let's party" or com == "party mode" :
+            party_mode = 1
+    
+        elif com == "movie time" or com == "let's watch a movie" :
+            movie_mode = 1
+    
+        if day_mode ==1 or night_mode ==1 or party_mode ==1 or movie_mode ==1:
+            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+            cur = conn.cursor()
+            cur.execute("INSERT INTO activitylog VALUES (%s, %s, %s, %s, %s);",
+                            (  
+                                datetime.datetime.now(pytz.timezone('Asia/Kolkata')),
+                                day_mode,
+                                night_mode,
+                                party_mode,
+                                movie_mode,
+                            ),
+                        )
+            conn.commit()
+            cur.close()
+    if request.method == "GET":
+        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+        cur = conn.cursor()
+        cur.execute('SELECT daymode,nightmode,partymode,moviemode FROM activitylog ORDER BY "Time" DESC LIMIT 1')
+        t = cur.fetchall()
+        cur.close()
+        status = list(t[0])        
+        return {"day_mode":status[0],"night_mode":status[1],"party_mode":status[2],"movie_mode":status[3]}
