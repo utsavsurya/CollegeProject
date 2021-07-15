@@ -2,7 +2,7 @@ from codelearn_flask import app,conn #,db
 from flask import render_template,url_for,redirect,flash,request,make_response
 from codelearn_flask.forms import RegistrationForm,LoginForm
 from codelearn_flask.models import Datas
-from codelearn_flask.functions import log_to_db,temp_last_value,hum_last_value
+from codelearn_flask.functions import log_to_db,data_to_dashboard,data_for_1day_graph,data_for_1hour_graph,data_for_1week_graph,ML_predict
 import json
 from time import time
 from random import random         # remove later
@@ -12,6 +12,7 @@ import datetime
 import pytz
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 DB_HOST = "192.168.1.7"
 DB_NAME = "iot_db"
@@ -38,23 +39,9 @@ def dashboard():
 @app.route('/DataBoard',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def upload():
     if request.method == "POST":
-        #log_to_db(request.get_json())
-        request_data = request.get_json()
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-        cur = conn.cursor()
-        cur.execute("INSERT INTO datas VALUES (%s, %s, %s, %s, %s, %s);",
-                        (  
-                            datetime.datetime.now(pytz.timezone('Asia/Kolkata')),
-                            request_data['temp'],
-                            request_data['water'],
-                            request_data['ppl'],
-                            request_data['pow'],
-                            request_data['hum'],
-                        ),
-                    )
-        conn.commit()
-        cur.close()
-        return "Led on"
+        return log_to_db(request.get_json())
+
+
     if request.method == "GET":
         conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
         cur = conn.cursor()
@@ -71,25 +58,9 @@ def upload():
 
 @app.route('/data', methods=["GET", "POST"])   # SENDING LIVE DATA TO GRAPHS
 def data():
-
-    # Data Format
-    # [TIME, Temperature, Humidity]
-
-    #Temperature = temp_last_value()
-    #Humidity = hum_last_value()
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-    cur = conn.cursor()
-    cur.execute('SELECT temperature FROM datas ORDER BY "time" DESC LIMIT 1')
-    t = cur.fetchall()
-    cur.execute('SELECT humidity FROM datas ORDER BY "time" DESC LIMIT 1')
-    h = cur.fetchall()
-    cur.close()
-
-    Temperature = t[0]
-    Humidity = h[0]
-
-    data = [time() * 1000, Temperature[0] , Humidity[0]]
-    response = make_response(json.dumps(data))
+    response = make_response(json.dumps(
+        data_to_dashboard()                 # function where data is comming from
+        ))
     response.content_type = 'application/json'
     return response
 
@@ -99,49 +70,21 @@ def test():
     
 @app.route('/oneday',methods=['GET'])          # SENDS HOURLY DATA TO WEBPAGE
 def oneday():
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-    cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity,water FROM datas where time > now() - interval '1 day';")
-    t = cur.fetchall()
-    cur.close()
-
-    Datetime = pd.DataFrame([int(row[0].strftime("%H")) for row in t],columns=['hour'])
-    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
-    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])
-    Water = pd.DataFrame([row[3] for row in t],columns=['Wat'])
-    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity,Water],axis=1))
+    data = data_for_1day_graph()           # from functons.py
     time = list(data["hour"].unique())
     dd = data.groupby("hour").mean()
     return render_template('oneday.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]),water_values=list(dd["Wat"]))
 
 @app.route('/onehour',methods=['GET'])       # SENDS EVERY MINUTE DATA TO WEBPAGE
 def onehour():
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-    cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 hour';")
-    t = cur.fetchall()
-    cur.close()
-
-    Datetime = pd.DataFrame([int(row[0].strftime("%M")) for row in t],columns=['Minute'])
-    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
-    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])
-    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    data = data_for_1hour_graph()
     time = list(data["Minute"].unique())
     dd = data.groupby("Minute").mean()
     return render_template('onehour.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
 
 @app.route('/oneweek',methods=['GET'])       # SENDS DAILY DATA TO WEBPAGE
 def oneweek():
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
-    cur = conn.cursor()
-    cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 week';")
-    t = cur.fetchall()
-    cur.close()
-
-    Datetime = pd.DataFrame([(row[0].strftime("%A")) for row in t],columns=['day'])
-    Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
-    Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])    
-    data = pd.DataFrame(pd.concat([Datetime,Temperature,Humidity],axis=1))
+    data = data_for_1week_graph()
     time = list(data["day"].unique())
     dd = data.groupby("day").mean()
     return render_template('oneweek.html',labels=time,values1=list(dd["Temp"]),values2=list(dd["Hum"]))
@@ -170,9 +113,27 @@ def reg():
 def predict():
     Hour = int(request.args.get('time')[0:2])
     Minute = int(request.args.get('time')[3:5])
+    data = ML_predict(Hour,Minute)
+    # cur = conn.cursor()
+    # cur.execute("SELECT time,temperature,humidity FROM datas where time > now() - interval '1 month';")
+    # t = cur.fetchall()
+    # cur.close()
+
+    # Minute = pd.DataFrame([int(row[0].strftime("%H")) for row in t],columns=['Minute'])
+    # Hour = pd.DataFrame([int(row[0].strftime("%M")) for row in t],columns=['Hour'])
+    # Temperature = pd.DataFrame([row[1] for row in t],columns=['Temp'])
+    # Humidity = pd.DataFrame([row[2] for row in t],columns=['Hum'])    
+    # data = pd.DataFrame(pd.concat([Hour,Minute,Temperature,Humidity],axis=1))
+    # data.dropna(inplace=True)
+    # data[data["Hum"]==np.nan]
+    # data
+    # X = data[["Hour","Minute"]]
+    # y = data[["Temp","Hum"]]   
+     
+
     return '''
-              <h1>The Hour value is: {}</h1>
-              <h1>The Minute value is: {}</h1>'''.format(Hour, Minute)
+              <h1>The predected Temperature value is: {}</h1>
+              <h1>The predected Humidity value is: {}</h1>'''.format(data[0], data[1])
 
 @app.route('/voice',methods=['POST','GET']) # done  WHERE DATA FROM ARDUNIO IS COMMING VIA POST METHOD AND NEED TO BE HANDLED AND PUT INTO DATA BASE
 def voice():
@@ -216,3 +177,10 @@ def voice():
         cur.close()
         status = list(t[0])        
         return {"day_mode":status[0],"night_mode":status[1],"party_mode":status[2],"movie_mode":status[3]}
+
+@app.route("/todo",methods=["POST","GET"])
+def home():
+    if request.method == "POST":
+        todo = request.form.get("todo")
+        print(todo)
+    return render_template('MLpage.html')

@@ -16,45 +16,39 @@
       <input id="appt-time" type="time" name="time">
     </div>
     <div>
-        <input type="submit" value="Predict">
+      <button onclick="ssdad">Click me</button>
     </div>
 </form>
-<!-- Switch -->
-<div class="switch">
-    <label for="switch4">
-      Off
-      <input type="checkbox" id="switch4" checked="checked">
-      <span class="lever"></span>
-      On
-    </label>
-</div>
+<body>
+<form method="post" id="todo-form">
+  <input type="text" name="todo" id="todo">
+  <button type="submit">submit</button>
+</form>
 
-<div>
-  <canvas id="mydoughnut"></canvas>
-</div>
-</body>
+  <!--Jquery Cdn -->
+<script src="https://code.jquery.com/jquery-3.5.1.js"
+    integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+    crossorigin="anonymous"></script>
 
-<script>
-  var ctx = document.getElementById("mydoughnut").getContext("2d");
-  var lineChart = new Chart(ctx,{
-      type: "doughnut",
-      data:{
-          labels: ['Water','Air'],
-          datasets: [{
-            label: 'Water Level',
-            data: [75, 50],
-            backgroundColor: [
-              'rgb(54, 162, 235)',
-              'rgb(120,120,120)'
-            ],
-            hoverOffset: 4
-          }]
-        },
-      options: {
-          responsive: false
-      }
-  });
+<script type="text/javascript">
+$(document).on('submit','#todo-form',function(e)
+             {
+console.log('hello');
+e.preventDefault();
+$.ajax({
+  type:'POST',
+  url:'/',
+  data:{
+    todo:$("#todo").val()
+  },
+  success:function()
+  {
+    alert('saved');
+  }
+})
+});
 </script>
-
+</body>
 </html>
 {%endblock contentA %}
+
